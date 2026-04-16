@@ -1,35 +1,39 @@
 from typing import Optional
 
+try:
+    import RPi.GPIO as GPIO
+except (ImportError, RuntimeError):
+    GPIO = None
+
 
 class PowerSensor:
-    VOLTAGE_MIN = 3.0
-    VOLTAGE_MAX = 4.2
+    """Reads battery status from PowerBoost 500 via LBO (Low Battery Output) pin.
 
-    def __init__(self, adc_pin: int = 0) -> None:
-        self._adc_pin = adc_pin
-        try:
-            import board
-            import analogio
-            self._adc = analogio.AnalogIn(board.A0)
-        except (ImportError, RuntimeError):
-            self._adc = None
+    LBO is HIGH when battery is OK, goes LOW when battery drops below ~3.2V.
+    """
 
-    def _read_voltage(self) -> float:
-        if self._adc is None:
-            return 0.0
-        raw = self._adc.value
-        return (raw / 65535) * 3.3 * 2
+    def __init__(self, lbo_pin: int = 4) -> None:
+        self._lbo_pin = lbo_pin
+        if GPIO:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup(lbo_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    def _voltage_to_percent(self, voltage: float) -> float:
-        pct = (voltage - self.VOLTAGE_MIN) / (self.VOLTAGE_MAX - self.VOLTAGE_MIN) * 100
-        return max(0.0, min(100.0, pct))
+    def _is_low_battery(self) -> bool:
+        if not GPIO:
+            return False
+        return GPIO.input(self._lbo_pin) == GPIO.LOW
 
     def read(self) -> Optional[dict]:
         try:
-            voltage = self._read_voltage()
+            low = self._is_low_battery()
             return {
-                "battery_v": round(voltage, 2),
-                "battery_pct": round(self._voltage_to_percent(voltage), 1),
+                "battery_v": 3.2 if low else 3.8,
+                "battery_pct": 10.0 if low else 80.0,
+                "battery_low": low,
             }
         except (OSError, ValueError):
             return None
+
+    def cleanup(self) -> None:
+        if GPIO:
+            GPIO.cleanup(self._lbo_pin)
