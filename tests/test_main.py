@@ -1,0 +1,52 @@
+import os
+import tempfile
+import time
+import pytest
+from unittest.mock import MagicMock, patch
+from flight.main import FlightController
+
+@pytest.fixture
+def db_path():
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    yield path
+    os.unlink(path)
+
+@pytest.fixture
+def mock_sensors():
+    bme = MagicMock()
+    bme.read.return_value = {"pressure": 1013.25, "temperature": 21.0, "humidity": 45.0}
+    bno = MagicMock()
+    bno.read.return_value = {"yaw": 0.0, "roll": 0.0, "pitch": 0.0, "accel_x": 0.0, "accel_y": 0.0, "accel_z": 9.81}
+    pwr = MagicMock()
+    pwr.read.return_value = {"battery_v": 3.9, "battery_pct": 85.0}
+    return bme, bno, pwr
+
+def test_controller_initializes(db_path, mock_sensors):
+    bme, bno, pwr = mock_sensors
+    ctrl = FlightController(db_path=db_path, bme_sensor=bme, bno_sensor=bno, power_sensor=pwr)
+    assert ctrl.state_machine.state.value == "IDLE"
+
+def test_single_tick_reads_sensors(db_path, mock_sensors):
+    bme, bno, pwr = mock_sensors
+    ctrl = FlightController(db_path=db_path, bme_sensor=bme, bno_sensor=bno, power_sensor=pwr)
+    ctrl.tick()
+    bme.read.assert_called_once()
+    bno.read.assert_called_once()
+    pwr.read.assert_called_once()
+
+def test_tick_logs_data_when_armed(db_path, mock_sensors):
+    bme, bno, pwr = mock_sensors
+    ctrl = FlightController(db_path=db_path, bme_sensor=bme, bno_sensor=bno, power_sensor=pwr)
+    ctrl.state_machine.arm()
+    ctrl.tick()
+    rows = ctrl.db.get_latest_readings(count=1)
+    assert len(rows) == 1
+    assert rows[0]["state"] == "ARMED"
+
+def test_tick_handles_sensor_failure_gracefully(db_path, mock_sensors):
+    bme, bno, pwr = mock_sensors
+    bme.read.return_value = None
+    ctrl = FlightController(db_path=db_path, bme_sensor=bme, bno_sensor=bno, power_sensor=pwr)
+    ctrl.state_machine.arm()
+    ctrl.tick()  # should not crash
