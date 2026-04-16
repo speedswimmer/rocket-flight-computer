@@ -1,0 +1,16 @@
+[Unit]
+Description=Rocket Flight Controller
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/rocket
+ExecStart=/opt/rocket/venv/bin/python -m flight.main
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

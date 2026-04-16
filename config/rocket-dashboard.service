@@ -1,0 +1,16 @@
+[Unit]
+Description=Rocket Dashboard Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/rocket
+ExecStart=/opt/rocket/venv/bin/python -m dashboard.app
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
