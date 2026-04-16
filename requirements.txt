@@ -1,11 +1,8 @@
 # Flight Controller
+Adafruit-Blinka
 adafruit-circuitpython-bme280
 adafruit-circuitpython-bno055
 RPi.GPIO
-board
-busio
 
 # Dashboard
 flask
-
-# Shared
