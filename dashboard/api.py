@@ -60,4 +60,35 @@ def create_api_blueprint() -> Blueprint:
         db = current_app.config["db"]
         return jsonify(db.get_flights())
 
+    @bp.route("/api/battery-test", methods=["GET"])
+    def battery_test_status():
+        db = current_app.config["db"]
+        test = db.get_active_battery_test()
+        if test:
+            test["elapsed"] = time.time() - test["started_at"]
+        return jsonify(test)
+
+    @bp.route("/api/battery-test/start", methods=["POST"])
+    def battery_test_start():
+        db = current_app.config["db"]
+        existing = db.get_active_battery_test()
+        if existing:
+            return jsonify({"error": "Test already running", "id": existing["id"]}), 409
+        test_id = db.start_battery_test(time.time())
+        return jsonify({"id": test_id, "state": "RUNNING"})
+
+    @bp.route("/api/battery-test/stop", methods=["POST"])
+    def battery_test_stop():
+        db = current_app.config["db"]
+        test = db.get_active_battery_test()
+        if not test:
+            return jsonify({"error": "No test running"}), 404
+        db.stop_battery_test(test["id"], time.time())
+        return jsonify({"id": test["id"], "state": "COMPLETED"})
+
+    @bp.route("/api/battery-tests")
+    def battery_test_history():
+        db = current_app.config["db"]
+        return jsonify(db.get_battery_tests())
+
     return bp

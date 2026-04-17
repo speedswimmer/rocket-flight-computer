@@ -50,6 +50,33 @@ def test_get_all_config(db: FlightDB):
     assert all_cfg["key_a"] == "1"
     assert all_cfg["key_b"] == "2"
 
+def test_battery_test_lifecycle(db: FlightDB):
+    now = time.time()
+    test_id = db.start_battery_test(now)
+    assert test_id == 1
+
+    active = db.get_active_battery_test()
+    assert active is not None
+    assert active["state"] == "RUNNING"
+    assert active["low_at"] is None
+
+    db.set_battery_test_low(test_id, now + 3600)
+    active = db.get_active_battery_test()
+    assert active["low_at"] == pytest.approx(now + 3600)
+
+    # Second low call should not overwrite
+    db.set_battery_test_low(test_id, now + 7200)
+    active = db.get_active_battery_test()
+    assert active["low_at"] == pytest.approx(now + 3600)
+
+    db.stop_battery_test(test_id, now + 7200)
+    assert db.get_active_battery_test() is None
+
+    history = db.get_battery_tests()
+    assert len(history) == 1
+    assert history[0]["state"] == "COMPLETED"
+
+
 def test_get_readings_since(db: FlightDB):
     now = time.time()
     db.insert_reading(flight_id=None, timestamp=now - 10, pressure=1013.0,

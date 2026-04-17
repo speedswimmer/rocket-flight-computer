@@ -90,3 +90,40 @@ class FlightDB:
     def get_all_config(self) -> dict[str, str]:
         cur = self.conn.execute("SELECT key, value FROM config")
         return {row["key"]: row["value"] for row in cur.fetchall()}
+
+    # -- Battery tests --
+
+    def start_battery_test(self, timestamp: float) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO battery_tests (started_at, state) VALUES (?, 'RUNNING')",
+            (timestamp,),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def stop_battery_test(self, test_id: int, timestamp: float) -> None:
+        self.conn.execute(
+            "UPDATE battery_tests SET ended_at=?, state='COMPLETED' WHERE id=?",
+            (timestamp, test_id),
+        )
+        self.conn.commit()
+
+    def set_battery_test_low(self, test_id: int, timestamp: float) -> None:
+        self.conn.execute(
+            "UPDATE battery_tests SET low_at=? WHERE id=? AND low_at IS NULL",
+            (timestamp, test_id),
+        )
+        self.conn.commit()
+
+    def get_active_battery_test(self) -> Optional[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM battery_tests WHERE state='RUNNING' ORDER BY id DESC LIMIT 1"
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def get_battery_tests(self) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM battery_tests ORDER BY id DESC"
+        )
+        return [dict(row) for row in cur.fetchall()]

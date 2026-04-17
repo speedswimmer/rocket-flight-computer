@@ -102,6 +102,12 @@ class FlightController:
                 self.altitude_calc.set_baseline(data["pressure"], data["temperature"])
                 self.config.set("calibrate_requested", False)
 
+            # Track battery LOW for active battery test
+            if pwr_data and pwr_data.get("battery_low"):
+                bat_test = self.db.get_active_battery_test()
+                if bat_test and bat_test["low_at"] is None:
+                    self.db.set_battery_test_low(bat_test["id"], now)
+
     def get_sample_rate(self) -> float:
         state = self.state_machine.state
         if state in (FlightState.ASCENT, FlightState.APOGEE, FlightState.DESCENT):

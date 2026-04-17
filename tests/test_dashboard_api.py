@@ -104,3 +104,42 @@ def test_api_disarm(client):
     assert resp.status_code == 200
     data = json.loads(resp.data)
     assert data["state"] == "IDLE"
+
+
+def test_api_battery_test_lifecycle(client):
+    # No active test initially
+    resp = client.get("/api/battery-test")
+    assert resp.status_code == 200
+    assert json.loads(resp.data) is None
+
+    # Start test
+    resp = client.post("/api/battery-test/start")
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data["state"] == "RUNNING"
+
+    # Cannot start while running
+    resp = client.post("/api/battery-test/start")
+    assert resp.status_code == 409
+
+    # Active test exists
+    resp = client.get("/api/battery-test")
+    data = json.loads(resp.data)
+    assert data["state"] == "RUNNING"
+    assert "elapsed" in data
+
+    # Stop test
+    resp = client.post("/api/battery-test/stop")
+    assert resp.status_code == 200
+    data = json.loads(resp.data)
+    assert data["state"] == "COMPLETED"
+
+    # Cannot stop when none running
+    resp = client.post("/api/battery-test/stop")
+    assert resp.status_code == 404
+
+    # History shows completed test
+    resp = client.get("/api/battery-tests")
+    data = json.loads(resp.data)
+    assert len(data) == 1
+    assert data[0]["state"] == "COMPLETED"

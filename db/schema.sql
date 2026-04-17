@@ -33,3 +33,11 @@ CREATE TABLE IF NOT EXISTS config (
     value      TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS battery_tests (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at  REAL NOT NULL,
+    low_at      REAL,
+    ended_at    REAL,
+    state       TEXT NOT NULL DEFAULT 'RUNNING'
+);

@@ -72,6 +72,29 @@
         </section>
     </div>
 
+    <div id="battery-test-section">
+        <section id="battery-test" class="readout-panel">
+            <h2>BATTERY RUNTIME TEST</h2>
+            <div class="readout-row">
+                <span class="label">Status</span>
+                <span id="bat-test-state" class="value status-inactive">IDLE</span>
+            </div>
+            <div class="readout-row">
+                <span class="label">Runtime</span>
+                <span id="bat-test-runtime" class="value">--:--:--</span>
+            </div>
+            <div class="readout-row">
+                <span class="label">Low Battery at</span>
+                <span id="bat-test-low-at" class="value">--</span>
+            </div>
+            <div class="bat-test-controls">
+                <button id="btn-bat-start" class="ctrl-btn">START TEST</button>
+                <button id="btn-bat-stop" class="ctrl-btn" disabled>STOP TEST</button>
+            </div>
+            <div id="bat-test-history" class="bat-history"></div>
+        </section>
+    </div>
+
     <footer id="controls">
         <button id="btn-arm" class="ctrl-btn">ARM</button>
         <button id="btn-disarm" class="ctrl-btn" disabled>DISARM</button>
