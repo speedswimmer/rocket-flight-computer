@@ -76,6 +76,7 @@ body {
     font-size: 20px; font-weight: bold; color: var(--accent);
     background: var(--bg-panel); border: 1px solid var(--accent);
     padding: 6px 12px; border-radius: 3px; white-space: nowrap;
+    min-width: 120px; text-align: center;
 }
 #attitude-canvas { border-radius: 50%; border: 2px solid var(--border); width: 300px; height: 300px; }
 
